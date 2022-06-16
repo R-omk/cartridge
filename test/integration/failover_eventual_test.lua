@@ -221,20 +221,20 @@ g.test_api_failover = function()
     -------------------------
 
     -- Set with new GraphQL API
-    t.assert_covers(heplers.set_failover_params(cluster, {mode = 'disabled'}), {mode = 'disabled'})
+    t.assert_covers(helpers.set_failover_params(cluster, {mode = 'disabled'}), {mode = 'disabled'})
     t.assert_covers(helpers.get_failover_params(cluster), {mode = 'disabled'})
     t.assert_equals(get_failover(), false)
     t.assert_equals(_call('admin_get_failover'), false)
     t.assert_covers(_call('failover_get_params'), {mode = 'disabled'})
 
     -- Set with new GraphQL API
-    t.assert_covers(heplers.set_failover_params(cluster, {mode = 'eventual'}), {mode = 'eventual'})
+    t.assert_covers(helpers.set_failover_params(cluster, {mode = 'eventual'}), {mode = 'eventual'})
     t.assert_covers(helpers.get_failover_params(cluster), {mode = 'eventual'})
     t.assert_equals(get_failover(), true)
     t.assert_equals(_call('admin_get_failover'), true)
     t.assert_covers(_call('failover_get_params'), {mode = 'eventual'})
 
-    t.assert_covers(heplers.set_failover_params(cluster,
+    t.assert_covers(helpers.set_failover_params(cluster,
         {failover_timeout = 0}),
         {failover_timeout = 0}
     )
@@ -245,19 +245,19 @@ g.test_api_failover = function()
         ]]), 0
     )
 
-    t.assert_covers(heplers.set_failover_params(cluster,
+    t.assert_covers(helpers.set_failover_params(cluster,
         {fencing_enabled = false}),
         {fencing_enabled = false}
     )
     t.assert_covers(helpers.get_failover_params(cluster), {fencing_enabled = false})
 
-    t.assert_covers(heplers.set_failover_params(cluster,
+    t.assert_covers(helpers.set_failover_params(cluster,
         {fencing_pause = 2}),
         {fencing_pause = 2}
     )
     t.assert_covers(helpers.get_failover_params(cluster), {fencing_pause = 2})
 
-    t.assert_covers(heplers.set_failover_params(cluster,
+    t.assert_covers(helpers.set_failover_params(cluster,
         {fencing_timeout = 4}),
         {fencing_timeout = 4}
     )
@@ -266,19 +266,19 @@ g.test_api_failover = function()
     -- Set with new GraphQL API
     t.assert_error_msg_equals(
         'topology_new.failover missing state_provider for mode "stateful"',
-        set_failover_params, {mode = 'stateful'}
+        helpers.set_failover_params, {mode = 'stateful'}
     )
     t.assert_error_msg_equals(
         'topology_new.failover.tarantool_params.uri: Invalid URI "!@#$"',
-        set_failover_params, {tarantool_params = {uri = '!@#$', password = 'xxx'}}
+        helpers.set_failover_params, {tarantool_params = {uri = '!@#$', password = 'xxx'}}
     )
     t.assert_error_msg_contains(
         'Variable "tarantool_params.password" expected to be non-null',
-        set_failover_params, {tarantool_params = {uri = 'localhost:9'}}
+        helpers.set_failover_params, {tarantool_params = {uri = 'localhost:9'}}
     )
     t.assert_error_msg_contains(
         'topology_new.failover.etcd2_params.endpoints[1]: Invalid URI "%^&*"',
-        set_failover_params, {etcd2_params = {endpoints = {'%^&*'}}}
+        helpers.set_failover_params, {etcd2_params = {endpoints = {'%^&*'}}}
     )
 
     local tarantool_defaults = {
@@ -294,7 +294,7 @@ g.test_api_failover = function()
         password = '',
     }
     t.assert_equals(
-        heplers.set_failover_params(cluster, {
+        helpers.set_failover_params(cluster, {
             etcd2_params = {lock_delay = 36.6, prefix = 'kv'},
         }), {
             mode = 'eventual',
@@ -316,7 +316,7 @@ g.test_api_failover = function()
         }
     )
     t.assert_equals(
-        heplers.set_failover_params(cluster, {
+        helpers.set_failover_params(cluster, {
             etcd2_params = {endpoints = {'goo.gl:9'}},
         }), {
             mode = 'eventual',
@@ -350,7 +350,7 @@ g.test_api_failover = function()
 
     local tarantool_params = {uri = 'stateboard.com:8', password = 'xxx'}
     t.assert_equals(
-        heplers.set_failover_params(cluster, {tarantool_params = tarantool_params}),
+        helpers.set_failover_params(cluster, {tarantool_params = tarantool_params}),
         {
             mode = 'eventual',
             failover_timeout = 0,
@@ -362,7 +362,7 @@ g.test_api_failover = function()
         }
     )
     t.assert_equals(
-        heplers.set_failover_params(cluster, {mode = 'stateful', state_provider = 'tarantool'}),
+        helpers.set_failover_params(cluster, {mode = 'stateful', state_provider = 'tarantool'}),
         {
             mode = 'stateful',
             state_provider = 'tarantool',
