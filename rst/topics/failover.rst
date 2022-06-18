@@ -158,6 +158,11 @@ algorithm is slightly different from that in case of eventual failover:
 * Every appointment (self-made or fetched) is immune for a while
   (controlled by the ``IMMUNITY_TIMEOUT`` option).
 
+Leader changing in this mode also calls ``box.ctl.promote``. It allows to use
+synchronous spaces. Note that it's restricted to use master-master replication
+(``ALL_RW`` option in Cartridge replicaset) and synchronous spaces in one
+replicaset.
+
 ..  _cartridge-raft_failover:
 
 *******************************************************************************
