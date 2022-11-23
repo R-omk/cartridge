@@ -77,7 +77,7 @@ local function get_info(uri)
 
         local topology_cfg = confapplier.get_readonly('topology')
         local rs_uuid = box_info.cluster.uuid
-        local vshard_group = topology_cfg.replicasets[rs_uuid].vshard_group or 'default'
+        local vshard_group = topology_cfg and topology_cfg.replicasets[rs_uuid].vshard_group or 'default'
         local ok, storage_info = pcall(vshard and vshard.storage.info)
 
         if ok then

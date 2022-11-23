@@ -472,20 +472,84 @@ local function boot_instance(clusterwide_config)
             topology_cfg, replicaset_uuid
         )
 
-        -- if other instances report that they have a leader
-        -- then use leader_uuid from membership
         local leader_uuid
-        for _, instance_uuid in ipairs(leaders_order) do
-            local server = topology_cfg.servers[instance_uuid]
-            if not server.disabled then
-                local member = membership.get_member(server.uri)
-                if member.status == 'alive'
-                and member.payload.leader_uuid ~= nil
-                then
-                    leader_uuid = member.payload.leader_uuid
-                    break
-                end
+
+        local is_preferable_leader = function(prev_info, info)
+          if not prev_info then
+            return true
+          end
+
+          -- check ro == false more priority
+          if prev_info.general.ro ~= info.general.ro then
+            -- ro == false - previous
+            -- ro == true - current
+            return prev_info.general.ro
+          end
+
+          for k, v in ipairs(info.replication.vclock) do
+            local prev_v = prev_info.replication.vclock[k]
+            if prev_v and v > prev_v then
+              return true
             end
+          end
+
+          return false
+        end
+
+        local deadline = fiber.time() + 30
+        local get_box_info = require("cartridge.lua-api.boxinfo").get_info
+
+        while assert(fiber.time() < deadline, "leader selection deadline") do
+          local was_error, leader_info
+
+          local wait_count_to_bootstrap_leader = #leaders_order - 1
+
+          for _, uuid in ipairs(leaders_order) do
+            if uuid ~= instance_uuid then
+
+              local server = topology_cfg.servers[uuid]
+              local info, err = get_box_info(server.uri)
+
+              if err then
+                was_error = true
+                log.error("can't get info form %s: %s", server.uri, err)
+
+              elseif info then
+                -- instance with vclock may be leader
+                if next(info.replication.vclock) and is_preferable_leader(leader_info, info) then
+                  leader_info = info
+                  leader_uuid = uuid
+                end
+
+                -- check for potential leader that replica was started
+                if info.general.ro and not next(info.replication.vclock) then
+                  wait_count_to_bootstrap_leader = wait_count_to_bootstrap_leader - 1
+                end
+              end
+            end
+          end
+
+          if leader_uuid then
+            log.info("leader_uuid=%s (%s) was selected", leader_uuid, topology_cfg.servers[leader_uuid].uri)
+            -- leader was selected
+            break
+          end
+
+          if leaders_order[1] == instance_uuid then
+            if wait_count_to_bootstrap_leader == 0 then
+              -- leader ready to bootstrap
+              log.info("ready to bootstrap as leader")
+              break
+            end
+          else
+            if not was_error then
+              -- replica ready to start
+              log.info("ready to start as replica")
+              break
+            end
+          end
+
+          fiber.sleep(1)
         end
 
         if not leader_uuid then
